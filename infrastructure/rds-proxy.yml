@@ -1,0 +1,68 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "rds proxy test"
+Resources:
+  RDSDBCluster:
+      Type: "AWS::RDS::DBCluster"
+      Properties:
+        DBClusterIdentifier: "database-1"
+        # AvailabilityZones:
+        # - ap-northeast-1a
+        # - ap-northeast-1c
+        # - ap-northeast-1d
+        # BackupRetentionPeriod: 1
+        # DatabaseName: "tbd"
+        # DBClusterParameterGroupName: "tbd"
+        # DBSubnetGroupName: "beacon staging"
+        Engine: "aurora-mysql"
+        # Port: !GetAtt RDSDBInstance.Endpoint.Port
+        MasterUsername: "admin"
+        MasterUserPassword: "password"
+        # PreferredBackupWindow: "13:27-13:57"
+        # PreferredMaintenanceWindow: "sun:16:32-sun:17:02"
+        VpcSecurityGroupIds:
+        - "sg-09a86bea2560b79a4"
+        StorageEncrypted: true
+        # KmsKeyId: !Sub "arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/548b2ebc-8259-4f23-ac44-25c5a931afe2"
+        EngineVersion: "5.7.mysql_aurora.2.07.2"
+        EnableIAMDatabaseAuthentication: false
+        EngineMode: "provisioned"
+        DeletionProtection: false
+        EnableHttpEndpoint: false
+
+  RDSDBInstance:
+    Type: "AWS::RDS::DBInstance"
+    Properties:
+      DBInstanceClass: "db.t3.small"
+      DBClusterIdentifier: !Ref RDSDBCluster
+      Engine: "aurora-mysql"
+
+  RDSDBInstance2:
+    Type: "AWS::RDS::DBInstance"
+    Properties:
+      DBInstanceClass: "db.t3.small"
+      DBClusterIdentifier: !Ref RDSDBCluster
+      Engine: "aurora-mysql"
+
+  DBProxy:
+    Type: AWS::RDS::DBProxy
+    Properties:
+      DBProxyName: proxytestdb1
+      EngineFamily: MYSQL
+      RoleArn: arn:aws:iam::906332056165:role/service-role/rds-proxy-role-1606313663086
+      Auth:
+        -
+          SecretArn: arn:aws:secretsmanager:ap-northeast-1:906332056165:secret:testdb1-zYRM3n
+      VpcSecurityGroupIds:
+        - sg-09a86bea2560b79a4
+      VpcSubnetIds:
+        - subnet-6580d70d
+        - subnet-6480d70c
+        - subnet-4cc6b664
+
+  DBProxyTargetGroup:
+    Type: AWS::RDS::DBProxyTargetGroup
+    Properties:
+      DBProxyName: !Ref DBProxy
+      DBClusterIdentifiers:
+        - !Ref RDSDBCluster
+      TargetGroupName: default
